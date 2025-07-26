@@ -1,4 +1,4 @@
-use std::future::Future;
+use std::{fs, future::Future};
 use tokio::{
     sync::{mpsc, oneshot},
     task::JoinHandle,
@@ -29,7 +29,10 @@ impl Gateway {
             actor.run().await;
         });
 
-        Self { tx, _handle: handle }
+        Self {
+            tx,
+            _handle: handle,
+        }
     }
 
     pub fn api(&self) -> impl GatewayApi + Send + Sync + Clone + 'static {
@@ -37,7 +40,7 @@ impl Gateway {
     }
 }
 
-pub struct Request(oneshot::Sender<Vec<String>>);
+pub struct Request(pub oneshot::Sender<Vec<String>>);
 
 struct GatewayActor {
     recv: mpsc::Receiver<Request>,
@@ -46,7 +49,20 @@ struct GatewayActor {
 
 impl GatewayActor {
     pub fn new(recv: mpsc::Receiver<Request>) -> Self {
-        Self { recv, data: vec![] }
+        let data = Self::load_data_from_file();
+        Self { recv, data }
+    }
+
+    fn load_data_from_file() -> Vec<String> {
+        let content = fs::read_to_string("data.txt").unwrap();
+        let lines: Vec<String> = content
+            .lines()
+            .map(|line| line.trim().to_string())
+            .collect();
+
+        assert_eq!(lines.len(), 500);
+
+        lines
     }
 
     pub async fn run(&mut self) {
