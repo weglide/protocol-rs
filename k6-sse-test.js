@@ -1,6 +1,6 @@
 import http from 'k6/http';
 import { check } from 'k6';
-import { Rate, Counter, Gauge } from 'k6/metrics';
+import { Rate, Counter } from 'k6/metrics';
 
 // Custom metrics
 export const sseConnections = new Counter('sse_connections_made');
@@ -11,7 +11,7 @@ export const options = {
     scenarios: {
         sse_load_test: {
             executor: 'constant-vus',
-            vus: 5000,
+            vus: 10_000,
             duration: '20s',
         },
     },

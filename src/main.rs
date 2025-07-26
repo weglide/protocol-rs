@@ -30,16 +30,11 @@ async fn sse_stream<T: GatewayApi + Send + Sync + Clone + 'static>(
     let stream = stream::unfold(api, |api| async move {
         tokio::time::sleep(Duration::from_millis(500)).await;
         let data = api.read().await;
-        let json_data = serde_json::to_string(&data).unwrap();
-        let event = Event::default().data(json_data);
+        let event = Event::default().json_data(&data).unwrap();
         Some((Ok(event), api))
     });
 
-    Sse::new(stream).keep_alive(
-        axum::response::sse::KeepAlive::new()
-            .interval(Duration::from_secs(1))
-            .text("keep-alive-text"),
-    )
+    Sse::new(stream)
 }
 
 async fn websocket_handler<T: GatewayApi + Send + Sync + Clone + 'static>(

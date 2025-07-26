@@ -8,7 +8,7 @@ Given some clients that periodically want to request a list of around 500 string
 Always 5k users making http request every 500ms.
 
 ```sh
-k6 run k6-rest-rest.js
+k6 run k6-rest-test.js
 ```
 
 ## SSE
@@ -25,3 +25,7 @@ This seems to have less performance than HTTP, only achieves around 80% with 500
 ## WebSocket
 
 Always 15k users at the same time. They receive data every 500ms.
+
+```sh
+k6 run k6-ws-test.js
+```

@@ -13,7 +13,7 @@ export const options = {
     scenarios: {
         ws_load_test: {
             executor: 'constant-vus',
-            vus: 15000,
+            vus: 10_000,
             duration: '20s',
         },
     },
@@ -31,23 +31,29 @@ export default function () {
     const response = ws.connect(url, {}, function (socket) {
         wsActiveConnections.add(1);
 
-        socket.on('message', function message(data) {
+        socket.on('message', data => {
             wsMessages.add(1);
             wsDataReceived.add(data.length);
             sessionSuccess = true;
         });
 
-        socket.on('close', function close() {
+        socket.on('close', () => {
             wsActiveConnections.add(-1);
         });
 
-        socket.setTimeout(function () {
+        // set new bounding box
+        socket.setInterval(() => {
+            socket.send('0|10|10|45')
+        }, 5_000)
+
+        // simulate disconnecting clients
+        socket.setTimeout(() => {
             socket.close();
-        }, 20000);
+        }, 10_000);
     });
 
     check(response, {
-        'WebSocket connection successful': (r) => r && r.status === 101,
+        'WebSocket connection successful': r => r && r.status === 101,
     });
 
     wsSuccessfulSessions.add(sessionSuccess ? 1 : 0);
