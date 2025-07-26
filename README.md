@@ -20,6 +20,12 @@ This equals 1000 HTTP requests per seconds and 10k data SSE per second.
 k6 run k6-sse-test.js
 ```
 
+You might want to increase the port range for this:
+
+```sh
+sudo sysctl -w net.inet.ip.portrange.first=16384
+```
+
 This seems to have less performance than HTTP, only achieves around 80% with 5000 concurrent users.
 
 ## WebSocket
