@@ -4,7 +4,6 @@ import { Rate, Counter, Gauge } from 'k6/metrics';
 
 // Custom metrics
 export const sseConnections = new Counter('sse_connections_made');
-export const sseMessages = new Counter('sse_messages_received');
 export const sseDataReceived = new Counter('sse_data_bytes');
 export const sseSuccessfulSessions = new Rate('sse_successful_sessions');
 
@@ -40,7 +39,6 @@ export default function () {
         const hasData = response.body && response.body.length > 0;
         const isTimeout = response.error && response.error.includes('timeout');
 
-        // A successful SSE session is one where we received data
         const sessionSuccess = hasData && (response.status === 200 || isTimeout);
 
         check(response, {
@@ -49,12 +47,7 @@ export default function () {
         });
 
         if (hasData) {
-            // Count data events and bytes received
-            const dataEvents = (response.body.match(/^data: /gm) || []).length;
-            sseMessages.add(dataEvents);
             sseDataReceived.add(response.body.length);
-
-            // Mark as successful if we got data (even with timeout)
             sseSuccessfulSessions.add(1);
         } else {
             sseSuccessfulSessions.add(0);
