@@ -28,14 +28,31 @@ async fn hello_world<T: GatewayApi + Send + Sync + Clone>(
 async fn sse_stream<T: GatewayApi + Send + Sync + Clone + 'static>(
     State(AppState(api)): State<AppState<T>>,
 ) -> Sse<impl Stream<Item = Result<Event, axum::Error>>> {
-    let stream = stream::unfold(api, |api| async move {
-        tokio::time::sleep(Duration::from_millis(500)).await;
-        let data = api.read().await;
-        let event = Event::default().json_data(&data).unwrap();
-        Some((Ok(event), api))
+    let receiver = api.subscribe_sse().await;
+
+    let stream = stream::unfold(receiver, |mut receiver| async move {
+        match receiver.recv().await {
+            Some(data) => {
+                let event = Event::default().json_data(&data).unwrap();
+                Some((Ok(event), receiver))
+            }
+            None => {
+                // Channel closed
+                None
+            }
+        }
     });
 
     Sse::new(stream)
+}
+
+async fn sse_count<T: GatewayApi + Send + Sync + Clone>(
+    State(AppState(api)): State<AppState<T>>,
+) -> Json<serde_json::Value> {
+    let count = api.get_sse_count().await;
+    Json(serde_json::json!({
+        "connected_sse_streams": count
+    }))
 }
 
 async fn websocket_handler<T: GatewayApi + Send + Sync + Clone + 'static>(
@@ -93,6 +110,7 @@ async fn main() {
     let app = Router::new()
         .route("/", get(hello_world))
         .route("/sse", get(sse_stream))
+        .route("/sse/count", get(sse_count))
         .route("/ws", get(websocket_handler))
         .with_state(app_state);
 
