@@ -3,6 +3,13 @@
 Load tests for data serving via `axum` using different protocol.
 Given some clients that periodically want to request a list of around 500 strings, what is the best way to server them.
 
+## Running via Docker
+
+```sh
+docker build -t protocol-rs .
+docker run -ti -p 3000:3000 protocol-rs
+```
+
 ## HTTP
 
 Always 5k users making http request every 500ms.
