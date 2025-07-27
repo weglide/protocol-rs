@@ -42,3 +42,14 @@ Always 15k users at the same time. They receive data every 500ms.
 ```sh
 k6 run k6-ws-test.js
 ```
+
+# Test with Gatling
+You need [Node.js](https://nodejs.org/en/download) v18 or later (LTS versions only) and npm v8 or later (included with Node.js).
+
+Run the typeScript sample:
+
+```shell
+cd gatling
+npm install
+npx gatling run --typescript --simulation ws
+```
