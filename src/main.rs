@@ -13,6 +13,7 @@ use axum::{
 use futures::stream::{self, Stream};
 use protocol_rs::{Gateway, GatewayApi};
 use std::time::Duration;
+use tokio::signal;
 
 #[derive(Clone)]
 struct AppState<T: GatewayApi + Send + Sync + Clone>(T);
@@ -60,6 +61,30 @@ async fn handle_websocket<T: GatewayApi + Send + Sync + Clone + 'static>(
     }
 }
 
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+}
+
 #[tokio::main]
 async fn main() {
     let gateway = Gateway::new();
@@ -73,9 +98,10 @@ async fn main() {
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000").await.unwrap();
     println!("Server running on http://localhost:3000");
-    println!("REST API: http://localhost:3000/");
-    println!("SSE Stream: http://localhost:3000/sse");
-    println!("WebSocket: ws://localhost:3000/ws");
+    axum::serve(listener, app)
+        .with_graceful_shutdown(shutdown_signal())
+        .await
+        .unwrap();
 
-    axum::serve(listener, app).await.unwrap();
+    println!("Server shutdown complete!");
 }
